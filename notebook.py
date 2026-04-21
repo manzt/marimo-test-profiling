@@ -24,6 +24,18 @@ def _():
 
 
 @app.cell(hide_code=True)
+def _(Tree, per_test):
+    Tree(
+        leaves=[
+            {"path": row["file"] + "::" + row["name"], "value": row["median_s"]}
+            for row in per_test.iter_rows(named=True)
+            if row["median_s"] > 0
+        ]
+    )
+    return
+
+
+@app.cell(hide_code=True)
 def _():
     from datetime import datetime
     from pathlib import Path
@@ -36,7 +48,7 @@ def _():
 
     runs = pl.read_parquet(DATA / "runs.parquet").sort("started")
     per_test = pl.read_parquet(DATA / "per_test.parquet")
-    return CUTOFF, alt, per_test, pl, runs
+    return CUTOFF, Path, alt, per_test, pl, runs
 
 
 @app.cell(hide_code=True)
@@ -301,6 +313,65 @@ def _(alt, per_test, pl):
         .properties(height=320)
     )
     return
+
+
+@app.cell
+def _():
+    return
+
+
+@app.cell(hide_code=True)
+def _(mo):
+    mo.md("""
+    ## Tree explorer — per-test drilldown
+    """)
+    return
+
+
+@app.cell(hide_code=True)
+def _(per_test):
+    def build_tree(df):
+        """Group per-test rows into a nested dict for d3.hierarchy."""
+        root = {"name": "tests", "children": {}}
+        for row in df.iter_rows(named=True):
+            parts = row["file"].split("/")[1:]  # drop leading "tests"
+            parts.append(row["name"])
+            node = root
+            for i, part in enumerate(parts):
+                kids = node.setdefault("children", {})
+                if part not in kids:
+                    is_leaf = i == len(parts) - 1
+                    kids[part] = (
+                        {"name": part, "value": row["median_s"]}
+                        if is_leaf
+                        else {"name": part, "children": {}}
+                    )
+                node = kids[part]
+
+        def finalize(n):
+            if "children" in n:
+                n["children"] = [finalize(c) for c in n["children"].values()]
+            return n
+
+        return finalize(root)
+
+
+    tree_data = build_tree(per_test)
+    len(tree_data["children"]), sum(1 for _ in per_test.iter_rows())
+    return
+
+
+@app.cell(hide_code=True)
+def _(Path):
+    import anywidget
+    import traitlets
+
+
+    class Tree(anywidget.AnyWidget):
+        _esm = Path(__file__).parent / "widgets" / "treemap.js"
+        leaves = traitlets.List().tag(sync=True)
+
+    return (Tree,)
 
 
 @app.cell
