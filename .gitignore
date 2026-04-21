@@ -1,0 +1,8 @@
+__pycache__/
+*.py[cod]
+.venv/
+
+# Raw logs are regenerable via fetch.py; parquet is the checked-in truth.
+data/logs/
+
+__marimo__/

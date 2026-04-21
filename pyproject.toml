@@ -1,0 +1,13 @@
+[project]
+name = "marimo-test-profiling"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "altair>=6.0.0",
+    "marimo>=0.23.2",
+    "polars>=1.40.0",
+    "ruff>=0.15.11",
+    "vl-convert-python>=1.9.0.post1",
+]
